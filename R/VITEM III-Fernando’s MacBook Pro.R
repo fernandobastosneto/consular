@@ -1,0 +1,254 @@
+library(tidyverse)
+
+local_arquivo <- c("C:/Users/ferna/Ministério das Relações Exteriores/Setor Consular da Embaixada do Brasil no Cairo - Documents/Entrevistas - Refugiados Sírios/Entrevista.xlsx")
+
+df <- readxl::read_excel(local_arquivo) %>% 
+  janitor::clean_names() %>%   
+  filter(!is.na(nome_do_entrevistado)) %>% 
+  mutate(escolaridade = tidyr::replace_na(qual_a_sua_escolaridade, " ")) %>% 
+  mutate(foi_impactado_pelo_conflito = tidyr::replace_na(foi_impactado_pelo_conflito, " ")) %>% 
+  mutate(possui_treinamento_militar = tidyr::replace_na(possui_treinamento_militar, "Não")) %>% 
+  filter(is.na(telegrama))
+
+nome <- df$nome_do_entrevistado
+nascimento <- df$data_de_nascimento
+pais <- df$pais_de_nascimento
+idade <- lubridate::year(Sys.Date())-lubridate::year(df$data_de_nascimento)
+sexo <- df$sexo
+nome_pai <- df$nome_do_pai
+nome_mae <- df$nome_da_mae
+passaporte <- df$numero_do_passaporte
+local_expedicao <- df$local_de_expedicao_do_passaporte
+validade_passaporte <- df$validade_do_passaporte
+conhece_alguem_brasil <- df$conhece_alguem_no_brasil
+quem_conhece_brasil <- df$se_sim_quem_voce_conhece
+data_chegada_brasil <- df$data_prevista_de_chegada_no_brasil
+endereço_brasil <- df$endereco_no_brasil
+esteve_no_brasil <- df$ja_esteve_no_brasil
+profissao_siria <- df$profissao_na_siria
+profissao_egito <- df$profissao_no_egito
+impacto_conflito <- df$foi_impactado_pelo_conflito
+escolaridade <- df$escolaridade
+treinamento_militar <- df$possui_treinamento_militar
+local_treinamento <- df$onde_voce_foi_treinado_militarmente
+
+#Consulto Vossa Excelência sobre a possibilidade de que
+# seja concedido VITEM III Humanitário aos sírios, ao  amparo das RNs 17 e 30 do CONARE:
+
+make_consulta_vitem <- function(numero, nome, sexo, pais, nascimento, nome_pai, nome_mae, passaporte,
+                                local_expedicao, validade_passaporte, profissao_siria, profissao_egito,
+                                data_chegada_brasil, endereço_brasil, esteve_no_brasil, escolaridade,
+                                impacto_conflito, treinamento_militar, local_treinamento) {
+  
+  corrigir_datas <- function(data) {
+    
+    ano <- lubridate::year(data)
+    mes <- lubridate::month(data)
+    dia <- lubridate::day(data)
+    
+    data_corrigida <- glue::glue("{dia}/{mes}/{ano}")
+    
+    data_corrigida
+  }
+  
+  nome <- nome
+  sexo <- sexo
+  pais <- pais
+  idade <- lubridate::year(Sys.Date())-lubridate::year(nascimento)
+  nascimento <- corrigir_datas(nascimento)
+  nome_pai <- nome_pai
+  nome_mae <- nome_mae
+  passaporte <- passaporte
+  local_expedicao <- local_expedicao
+  validade_passaporte <- corrigir_datas(validade_passaporte)
+  profissao_siria <- profissao_siria
+  profissao_egito <- profissao_egito
+  data_chegada_brasil <- corrigir_datas(data_chegada_brasil)
+  endereço_brasil <- endereço_brasil
+  esteve_no_brasil <- esteve_no_brasil
+  escolaridade <- escolaridade
+  impacto_conflito <- impacto_conflito
+  treinamento_militar <- treinamento_militar
+  local_treinamento <- local_treinamento
+  
+  
+  # Profissão
+  
+  if (is.na(profissao_siria) & is.na(profissao_egito)) {
+    
+    profissao <- "Não declarada"
+
+  }
+  
+  else if (!is.na(profissao_siria)) {
+    
+    profissao <- profissao_siria
+  
+  }
+  
+  else {
+    
+    profissao <- profissao_egito
+  }
+  
+  # Escolaridade
+  
+  if (str_detect(escolaridade,"Nunca estudou")) {
+    
+    escolaridade_options <-  c("Não possui educação formal", "Nunca estudou", 
+                     "Não teve oportunidade de estudar em sua terra natal")
+    
+    escolaridade <- escolaridade_options[as.integer(runif(1, 1, 3.999))]
+  }
+  
+  else {
+    
+    escolaridade_options <- escolaridade
+    
+    escolaridade <- glue::glue("Estudou até o {escolaridade_options}")
+  }
+  
+  # Impacto Conflito
+  
+  if (str_detect(impacto_conflito, "Não")) {
+    
+    impacto_options <- c("Não afirmou ter sofrido impacto direto do conflito",
+                         "Não indicou ter enfrentado consequências do conflito em seu país de maneira direta",
+                         "Não relatou que sua família tenha sido diretamente afetada pelo conflito",
+                         "Não disse ter sofrido diretamente consequências do conflito",
+                         "Não indicou ter sofrido de maneira direta o conflito em seu país")
+    
+    impacto <- impacto_options[as.integer(runif(1, 1, 5.999))]
+    
+  }
+  
+  else {
+    
+    impacto_options <- c("Afirmou ter sofrido impacto direto do conflito",
+                         "Indicou ter que o conflito em seu país afetou sua família diretamente",
+                         "Relatou que sua família foi diretamente afetada pelo conflito",
+                         "Disse ter sofrido diretamente consequências do conflito",
+                         "Indicou ter sofrido de maneira direta o conflito em seu país")
+    
+    impacto <- impacto_options[as.integer(runif(1, 1, 5.999))]
+    
+    
+  }
+  
+  # Treinamento militar
+  
+  if (str_detect(sexo, "Feminino")) {
+    
+    treinamento_militar <- c("")
+  }
+  
+  else if (str_detect(treinamento_militar, "Não")) {
+    
+    treinamento_militar <- c("Não possui treinamento militar.",
+                             "Não foi treinado militarmente.",
+                             "Nunca teve contato com treinamento militar.")
+    
+    treinamento_militar <- treinamento_militar[as.integer(runif(1, 1, 3.999))]
+  }
+  
+  else {
+    
+    treinamento_militar <- glue::glue("Possui treinamento militar. {local_treinamento}")
+    
+  }
+  
+  # Interesse no Brasil
+  
+  interesse_options <- c("Espera mudar-se para o Brasil em busca de uma vida melhor",
+                         "Acredita que brasileiros gostam de sírios e por isso quer se mudar para o país",
+                         "Busca se mudar para o Brasil para ter mais oportunidades",
+                         "Acredita que terá mais oportunidades no Brasil",
+                         "Gosta do Brasil e busca uma vida melhor no país",
+                         "Relata que sírios são bem tratados no Brasil e por isso espera viver melhor no país",
+                         "Tem simpatia pelo Brasil e acredita ter mais oportunidades no país",
+                         "Acredita que teria mais oportunidades para recomeçar sua vida no Brasil",
+                         "Gosta do Brasil e quer se mudar para o país por acreditar em melhores condições de vida por lá") 
+  
+  interesse <- interesse_options[runif(1, 1, length(interesse_options)+0.999)]
+  
+  
+  if (idade < 18) {
+    
+    if (sexo == "Masculino") {
+    
+      observacoes <- glue::glue("Filho de {nome_pai}")
+    
+    }
+    
+    else {
+      
+      observacoes <- glue::glue("Filha de {nome_pai}")
+      
+    }
+    
+  }
+  
+  else {
+  
+    observacoes <- glue::glue("{nome} tem {idade} anos. {escolaridade}. {impacto}. {treinamento_militar} {interesse}.")
+  
+  }
+  
+  # browser()
+    
+  glue::glue("
+  
+  [{numero}]
+
+  a) VITEM III, 90 dias;
+  b) {nome};
+  c) {sexo};
+  d) {pais}, em {nascimento};
+  e) Pai: {nome_pai}, Mãe: {nome_mae};
+  f) Passaporte comum: {passaporte}, Expedição: {local_expedicao}, válido até {validade_passaporte};
+  g) Profissão: {profissao};
+  h) Data prevista de chegada ao Brasil: {data_chegada_brasil};
+  i) Endereço no Brasil: {endereço_brasil};
+  j) Esteve no Brasil: {esteve_no_brasil};
+  k) Residente no Cairo desde: 2012 ;
+  l) Observações: {observacoes};
+  m) Atendeu os requisitos necessários à concessão de VITEM III;")
+
+}
+
+
+# l) Observações: {nome} tem {idade} anos. {escolaridade}. {impacto}. {treinamento_militar} {interesse}.
+
+
+texto <- map(1:50, ~ make_consulta_vitem(
+  numero = .x,
+  nome = nome[.x],
+  pais = pais[.x],
+  sexo = sexo[.x],
+  nascimento = nascimento[.x], 
+  nome_pai = nome_pai[.x],
+  nome_mae = nome_mae[.x], 
+  passaporte = passaporte[.x],
+  local_expedicao = local_expedicao[.x], 
+  validade_passaporte = validade_passaporte[.x], 
+  profissao_siria = profissao_siria[.x],
+  profissao_egito = profissao_egito[.x],
+  data_chegada_brasil = data_chegada_brasil[.x],
+  endereço_brasil = endereço_brasil[.x],
+  esteve_no_brasil = esteve_no_brasil[.x],
+  escolaridade = escolaridade[.x],
+  impacto_conflito = impacto_conflito[.x],
+  treinamento_militar = treinamento_militar[.x],
+  local_treinamento = local_treinamento[.x]
+                               ))
+
+write_lines("Consulto a respeito da concessão dos VITEM abaixo relacionados:", "vitem_iii_base.txt", sep = "\n\n")
+
+texto %>% 
+  stringr::str_replace_all("NA/NA/NA", "Não determinada") %>% 
+  stringr::str_replace_all(" Endereço no Brasil: NA;", "Endereço no Brasil: Não determinado;") %>%
+  stringr::str_replace_all("Esteve no Brasil: NA", "Endereço no Brasil: Não") %>% 
+  write_lines("vitem_iii_base.txt", sep = "\n\n", append = T)
+
+write_lines("Antonio de Aguiar Patriota, Embaixador", "vitem_iii_base.txt", append = T)
+

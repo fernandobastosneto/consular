@@ -1,13 +1,11 @@
 ---
 title: "Consular no Oriente Médio"
 output: html_notebook
+editor_options: 
+  chunk_output_type: console
 ---
 
-This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
-
-Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
-
-```{r, setup}
+```{r, include = F, setup}
 library(tidyverse)
 library(readxl)
 
@@ -83,6 +81,7 @@ paises_om <- c("Amã","Cairo","Beirute",
 
 df %>% 
   filter(posto %in% paises_om) %>% 
+  # arrange(desc(total))
   ggplot() +
   geom_col(aes(tidytext::reorder_within(posto, total, ano), total, fill = posto), position = "dodge",
            show.legend = F) +
@@ -101,7 +100,7 @@ df %>%
 
 df %>% 
   filter(posto %in% paises_om | posto == "Pequim" | posto == "Luanda") %>% 
-  mutate(passaporte = arb +pases + padip + pasof + pacom) %>% 
+  mutate(passaporte = arb + pases + padip + pasof + pacom) %>% 
   arrange(desc(total)) %>% 
   select(-c(arb, pases, padip, pasof, pacom)) %>% 
   relocate(passaporte, .before = vistos) %>% 
@@ -144,6 +143,7 @@ df %>%
 df %>% 
   filter(posto %in% paises_om) %>% 
   arrange(desc(vistos)) %>% 
+  select(posto, vistos, ano) |> 
     ggplot() +
   geom_col(aes(tidytext::reorder_within(posto, vistos, ano), vistos, fill = posto), position = "dodge",
            show.legend = F) +
@@ -160,5 +160,34 @@ df %>%
 
 ```
 
+```{r}
+df %>% 
+  filter(posto %in% paises_om | posto == "Paris" | posto == "Londres") %>% 
+  mutate(passaporte = arb + pases + padip + pasof + pacom) %>% 
+  arrange(desc(passaporte)) %>% 
+  select(ano, passaporte, posto) %>% 
+  pivot_wider(names_from = ano, values_from = passaporte)
+  ggplot() +
+  geom_col(aes(tidytext::reorder_within(posto, passaporte, ano), passaporte, fill = posto), position = "dodge",
+           show.legend = F) +
+  facet_wrap(~ ano, scales = "free_y") +
+  coord_flip() +
+  tidytext::scale_x_reordered() +
+  labs(x = "Total de Documentos",
+       y = NULL,
+       title = "Postos no Oriente Médio, total de vistos") +
+  ggthemes::scale_fill_tableau(palette = "Tableau 20") +
+  theme_minimal()
+```
 
+```{r}
+df %>% 
+  filter(posto == "Hamamatsu" | posto == "Nagoia" | posto == "Tóquio") %>%
+  mutate(passaporte = arb + pases + padip + pasof + pacom) %>% 
+  arrange(desc(passaporte)) %>% 
+  select(ano, passaporte, posto) %>% 
+  group_by(ano) %>% 
+  summarise(soma = sum(passaporte))
+  pivot_wider(names_from = ano, values_from = passaporte)
+```
 

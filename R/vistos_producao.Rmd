@@ -1,0 +1,164 @@
+---
+title: "Produção de Vistos no Cairo"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message = F, warning = F)
+library(tidyverse)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+
+producao_2020 <- readxl::read_excel(here::here("data-raw/2020_producaoconsular.xlsx"), skip = 1) |> 
+  mutate(ano = 2020)
+producao_2021 <- readxl::read_excel(here::here("data-raw/2021_producaoconsular.xlsx"), skip = 1) |> 
+  mutate(ano = 2021)
+
+df <- producao_2020 |> 
+  bind_rows(producao_2021) |> 
+  filter(!is.na(POSTO))
+
+paises_om <- c("Embaixada do Brasil em Amã","Embaixada do Brasil no Cairo","Embaixada do Brasil em Beirute",
+                 "Embaixada do Brasil em Argel" ,"Embaixada do Brasil em Rabat","Embaixada do Brasil em Túnis",
+                 "Embaixada do Brasil em Abu Dhabi","Embaixada do Brasil em Bagdá","Embaixada do Brasil em Damasco",
+                 "Embaixada do Brasil em Doha","Embaixada do Brasil no Kuaite","Embaixada do Brasil em Mascate",
+                 "Embaixada do Brasil em Riade", "Consulado-Geral do Brasil em Istambul")
+
+```
+
+
+```{r}
+
+vistos <- df |> 
+  janitor::clean_names() |>
+  select(posto, ano, visto_de_visita, visto_temporario_v_trabalho, visto_temporario_iii_acolhida_humanitaria, visto_temporario_iv_estudo, visto_temporario_xi_reuniao_familiar, visto_oficial, visto_diplomatico, visto_temporario_xiii_acordos_internacionais, visto_de_cortesia, visto_temporario_vii_atividades_religiosas, visto_temporario_ix_investimentos, visto_temporario_i_pesquisa_ensino_ou_extensao_academica, visto_temporario_vi_ferias_trabalho, visto_permanente, visto_temporario_viii_servico_voluntario, visto_temporario_v, visto_de_turista, visto_temporario_xiv_politica_migratoria, visto_temporario_xii_atividades_artisticas_e_desportivas, visto_temporario_ii, visto_temporario_e_especial_v_assistencia_tecnica_ou_transferencia_de_tecnologia, visto_temporario_iv, visto_temporario_x_atividade_de_relevancia_economica_cientifica_tecnologica_ou_cultural, visto_temporario_ii_tratamento_de_saude, visto_temporario_i, visto_residencia_temporaria, visto_temporario_para_dependente_de_portador_de_vicam, visto_temporario_iii)
+
+```
+
+# VITEM III
+
+```{r}
+vitem_iii_total_2020 <- vistos |> 
+  select(posto, ano, visto_temporario_iii_acolhida_humanitaria) |> 
+  arrange(desc(visto_temporario_iii_acolhida_humanitaria)) |>
+  pivot_wider(names_from = ano, values_from = visto_temporario_iii_acolhida_humanitaria) |> 
+  filter(posto != "Total") |> 
+  unnest() |> 
+  arrange(desc(`2020`)) |> 
+  select(posto, `2020`) |> 
+  filter(`2020` > 0)
+
+vitem_iii_total_2021 <- vistos |> 
+  select(posto, ano, visto_temporario_iii_acolhida_humanitaria) |> 
+  arrange(desc(visto_temporario_iii_acolhida_humanitaria)) |>
+  pivot_wider(names_from = ano, values_from = visto_temporario_iii_acolhida_humanitaria) |> 
+  filter(posto != "Total") |> 
+  unnest() |> 
+  arrange(desc(`2021`)) |> 
+  select(posto, `2021`) |> 
+  filter(`2021` > 0)
+
+
+```
+
+
+```{r}
+vistos |> 
+  select(posto, ano, visto_temporario_iii_acolhida_humanitaria) |> 
+  arrange(desc(visto_temporario_iii_acolhida_humanitaria)) |>
+  pivot_wider(names_from = ano, values_from = visto_temporario_iii_acolhida_humanitaria) |> 
+  filter(posto != "Total") |> 
+  unnest() |> 
+  arrange(desc(`2021`)) |> 
+  filter(posto %in% paises_om) |> 
+  filter(`2020` > 0 | `2021` > 0)
+
+# VITEM III produzidos pelo Cairo em 2022 janeiro a março: 96
+
+
+```
+
+
+# Visto de Visita
+
+```{r}
+vistos |>
+  select(posto, ano, visto_de_visita) |> 
+  arrange(desc(visto_de_visita)) |>
+  pivot_wider(names_from = ano, values_from = visto_de_visita) |> 
+  filter(posto != "Total") |> 
+  unnest() |> 
+  arrange(desc(`2021`)) |> 
+  select(posto, '2020', '2021') |> 
+  filter(`2020` > 0 | `2021` > 0)
+
+# VIVIS produzidos pelo Cairo em 2022 janeiro a março: 179
+
+
+```
+
+
+```{r}
+
+vistos |>
+  select(posto, ano, visto_de_visita) |> 
+  arrange(desc(visto_de_visita)) |>
+  pivot_wider(names_from = ano, values_from = visto_de_visita) |> 
+  filter(posto != "Total") |> 
+  unnest() |> 
+  arrange(desc(`2021`)) |> 
+  select(posto, '2020', '2021') |> 
+  filter(posto %in% paises_om) 
+
+```
+
+
+# Total de Vistos
+
+```{r}
+vistos |> 
+  pivot_longer(cols = 3:30, names_to = "visto", values_to = "quantidade") |> 
+  pivot_wider(names_from = ano, values_from = quantidade) |> 
+  unnest() |> 
+  mutate(`2020` = replace_na(`2020`, 0)) |> 
+  mutate(`2021` = replace_na(`2021`, 0)) |> 
+  group_by(posto) |> 
+  summarise(total_2020 = sum(`2020`),
+            total_2021 = sum(`2021`)) |> 
+  arrange(desc(total_2021)) |> 
+  filter(posto != "Total")
+  # filter(!is.na(total)) |> 
+
+# VIVIS produzidos pelo Cairo em 2022 janeiro a março: 323
+
+
+```
+
+```{r}
+
+vistos |> 
+  pivot_longer(cols = 3:30, names_to = "visto", values_to = "quantidade") |> 
+  pivot_wider(names_from = ano, values_from = quantidade) |> 
+  unnest() |> 
+  mutate(`2020` = replace_na(`2020`, 0)) |> 
+  mutate(`2021` = replace_na(`2021`, 0)) |> 
+  group_by(posto) |> 
+  summarise(total_2020 = sum(`2020`),
+            total_2021 = sum(`2021`)) |> 
+  ungroup() |> 
+  filter(posto %in% paises_om) |> 
+  arrange(desc(total_2021))
+
+
+
+```
+
